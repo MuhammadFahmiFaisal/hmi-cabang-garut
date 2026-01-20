@@ -110,5 +110,3 @@ Kontribusi sangat diterima! Jika Anda ingin memperbaiki bug atau menambahkan fit
 ## 📜 Lisensi
 
 Hak Cipta © 2024-2025 **HMI Cabang Garut**.
-
-Dibuat dengan 💚 untuk Yakusa.
