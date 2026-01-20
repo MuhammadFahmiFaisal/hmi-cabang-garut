@@ -1,7 +1,7 @@
 # HMI Cabang Garut
 
 <div align="center">
-  <img src="public/img/logohmiputih.png" alt="Logo HMI Cabang Garut" width="120" />
+  <img src="public/img/logohmiputih.png" alt="Logo HMI Cabang Garut" width="320" />
 </div>
 
 **Website Resmi Himpunan Mahasiswa Islam Cabang Garut**
