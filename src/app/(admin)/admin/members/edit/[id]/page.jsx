@@ -19,20 +19,25 @@ export default function EditMemberPage({ params }) {
     position: "",
     department: "KSB",
     instagram: "",
+    linkedin: "",
     image_url: "",
   });
 
-  const departments = [
-    "KSB",
-    "BIDANG PA",
-    "BIDANG PAO",
-    "BIDANG KOMDIG",
-    "BIDANG KPP",
-    "BIDANG PTKP",
-    "BIDANG PPD",
-    "BIDANG PU",
-    "BIDANG HUMHAM"
-  ];
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data, error } = await supabase
+        .from("departments")
+        .select("name")
+        .order("name", { ascending: true });
+
+      if (!error && data) {
+        setDepartments(data.map(d => d.name));
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +56,7 @@ export default function EditMemberPage({ params }) {
           position: data.position,
           department: data.department,
           instagram: data.instagram || "",
+          linkedin: data.linkedin || "",
           image_url: data.image_url || "",
         });
         setLoading(false);
@@ -98,6 +104,7 @@ export default function EditMemberPage({ params }) {
       position: formData.position,
       department: formData.department,
       instagram: formData.instagram.replace('@', ''),
+      linkedin: formData.linkedin,
       image_url: formData.image_url,
     }).eq('id', id);
 
@@ -126,7 +133,7 @@ export default function EditMemberPage({ params }) {
 
         {/* Department Selection */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Departemen / Bidang</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Bidang</label>
           <select
             name="department"
             value={formData.department}
@@ -169,17 +176,30 @@ export default function EditMemberPage({ params }) {
           </div>
         </div>
 
-        {/* Instagram */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Username Instagram (Tanpa @)</label>
-          <input
-            type="text"
-            name="instagram"
-            value={formData.instagram}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-gray-900"
-            placeholder="hmicabanggarut"
-          />
+        {/* Social Media */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Username Instagram (Tanpa @)</label>
+            <input
+              type="text"
+              name="instagram"
+              value={formData.instagram}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-gray-900"
+              placeholder="hmicabanggarut"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">URL LinkedIn</label>
+            <input
+              type="url"
+              name="linkedin"
+              value={formData.linkedin}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-gray-900"
+              placeholder="https://www.linkedin.com/in/username"
+            />
+          </div>
         </div>
 
         {/* Image Upload */}

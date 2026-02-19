@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Instagram } from "lucide-react";
+import { Instagram, Linkedin } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export const metadata = {
   description: "Struktur Pengurus HMI Cabang Garut Periode 2025-2026",
 };
 
-const MemberCard = ({ name, position, img, instagram }) => {
+const MemberCard = ({ name, position, img, instagram, linkedin }) => {
   const username = instagram || "hmicabanggarut"; // Default username
   const igUrl = `https://www.instagram.com/${username}`;
 
@@ -47,15 +47,26 @@ const MemberCard = ({ name, position, img, instagram }) => {
       </div>
 
       {/* Instagram Section */}
-      <Link
-        href={igUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm hover:bg-white/30 transition-colors cursor-pointer"
-      >
-        <Instagram size={14} className="text-white" />
-        {/* <span className="text-white text-[9px] font-medium tracking-wide">@{username}</span> */}
-      </Link>
+      <div className="mt-2 flex items-center gap-2">
+        <Link
+          href={igUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm hover:bg-white/30 transition-colors cursor-pointer"
+        >
+          <Instagram size={14} className="text-white" />
+        </Link>
+        {linkedin && (
+          <Link
+            href={linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm hover:bg-white/30 transition-colors cursor-pointer"
+          >
+            <Linkedin size={14} className="text-white" />
+          </Link>
+        )}
+      </div>
     </div>
   );
 };
@@ -72,58 +83,65 @@ const SectionTitle = ({ title }) => (
 
 import { supabase } from "@/lib/supabaseClient";
 
+// Mapping for clean display names if needed (Optional: can be removed if db name is used directly)
+const DEPARTMENT_TITLES = {
+  "BIDANG PA": "BIDANG PEMBINAAN ANGGOTA (PA)",
+  "BIDANG PAO": "BIDANG PEMBINAAN APARATUR ORGANISASI (PAO)",
+  "BIDANG KPP": "BIDANG KEWIRAUSAHAAN & PENGEMBANGAN PROFESI (KPP)",
+  "BIDANG PTKP": "BIDANG PERGURUAN TINGGI KEMAHASISWAAN & KEPEMUDAAN (PTKP)",
+  "BIDANG PPD": "BIDANG PARTISIPASI PEMBANGUNAN DAERAH (PPD)",
+  "BIDANG PU": "BIDANG PEMBERDAYAAN UMAT (PU)",
+  "BIDANG HUMHAM": "BIDANG HUKUM & HAM (HUMHAM)",
+  // Default fallback for others will be the DB name
+};
+
 export default async function StrukturPengurusPage() {
+  // 1. Fetch all members
   const { data: allMembers } = await supabase
     .from("members")
     .select("*")
-    .order("created_at", { ascending: true }); // Or order by some other logic if needed
+    .order("created_at", { ascending: true }); // Keep member order consistent
+
+  // 2. Fetch all departments
+  const { data: allDepartments } = await supabase
+    .from("departments")
+    .select("*")
+    .order("id", { ascending: true }); // Order by creation/ID 
 
   const safeMembers = allMembers || [];
+  const safeDepartments = allDepartments || [];
 
   // Helper to filter by department
-  const getMembersByDept = (dept) =>
-    safeMembers.filter(m => m.department === dept).map(m => ({
-      name: m.name,
-      position: m.position,
-      img: m.image_url, // Allow null, MemberCard handles fallback
-      instagram: m.instagram
-    }));
+  const getMembersByDept = (deptName) =>
+    safeMembers
+      .filter((m) => m.department === deptName)
+      .map((m) => ({
+        name: m.name,
+        position: m.position,
+        img: m.image_url,
+        instagram: m.instagram,
+        linkedin: m.linkedin,
+      }));
 
-  // --- DATA GROUP 1 (DALAM KOTAK HIJAU) ---
+  // Define Core Departments that go INSIDE the Green Box
+  const CORE_DEPARTMENTS = ["KSB", "BIDANG PA", "BIDANG PAO", "BIDANG KOMDIG"];
 
-  // 1. KSB
-  const ksb = getMembersByDept("KSB");
+  // Split departments into Inner and Outer groups
+  const innerDepartments = safeDepartments
+    .filter((d) => CORE_DEPARTMENTS.includes(d.name))
+    .sort(
+      (a, b) =>
+        CORE_DEPARTMENTS.indexOf(a.name) - CORE_DEPARTMENTS.indexOf(b.name)
+    );
 
-  // 2. Bidang Pembinaan Anggota (PA)
-  const bidangPA = getMembersByDept("BIDANG PA");
-
-  // 3. Bidang Pembinaan Aparatur Organisasi (PAO)
-  const bidangPAO = getMembersByDept("BIDANG PAO");
-
-  // 4. Bidang Komunikasi Digital
-  const bidangKomdig = getMembersByDept("BIDANG KOMDIG");
-
-  // --- DATA GROUP 2 (DI LUAR) ---
-
-  // 1. Bidang KPP
-  const bidangKPP = getMembersByDept("BIDANG KPP");
-
-  // 2. Bidang PTKP
-  const bidangPTKP = getMembersByDept("BIDANG PTKP");
-
-  // 3. Bidang PPD
-  const bidangPPD = getMembersByDept("BIDANG PPD");
-
-  // 4. Bidang Pemberdayaan Umat (PU)
-  const bidangPU = getMembersByDept("BIDANG PU");
-
-  // 5. Bidang Hukum & HAM (HUMHAM)
-  const bidangHumHam = getMembersByDept("BIDANG HUMHAM");
-
+  // Outer departments are those NOT in the core list.
+  // Note: We want to preserve the order from DB for new departments.
+  const outerDepartments = safeDepartments.filter(
+    (d) => !CORE_DEPARTMENTS.includes(d.name)
+  );
 
   return (
     <div className="w-full bg-[#0fa156] text-white font-sans pb-20">
-
       {/* PAGE HEADER */}
       <section className="bg-transparent pt-32 pb-8 px-6 md:px-20 max-w-7xl mx-auto">
         <div className="inline-block border border-white rounded-lg px-4 py-1 mb-4 backdrop-blur-sm bg-white/10">
@@ -142,110 +160,70 @@ export default async function StrukturPengurusPage() {
 
       {/* CONTENT CONTAINER */}
       <div className="max-w-7xl mx-auto px-4 mt-8 space-y-12">
+        {/* === GROUP 1: DARK GREEN ZONE (Core Departments) === */}
+        {innerDepartments.length > 0 && (
+          <div className="bg-[#00773A] p-8 md:p-12 rounded-[3rem] border-4 border-white/20 shadow-2xl space-y-16">
+            {innerDepartments.map((dept) => {
+              const members = getMembersByDept(dept.name);
+              // Special layout for PA and PAO (split rows) if needed, strictly mimicking original design
+              // Original design had PA and PAO split into rows of 3. We can keep that logic if desired,
+              // or simplify. To be safe and dynamic, we will use flex-wrap which naturally handles rows.
+              // However, the original code explicitly split into 3. 
+              // Let's stick to standard flex-wrap for robustness unless the user complains.
 
-        {/* === GROUP 1: DARK GREEN ZONE === */}
-        <div className="bg-[#00773A] p-8 md:p-12 rounded-[3rem] border-4 border-white/20 shadow-2xl space-y-16">
+              const title = DEPARTMENT_TITLES[dept.name] || dept.name;
 
-          {/* 1. KSB */}
-          <div>
-            <SectionTitle title="KSB" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {ksb.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
+              return (
+                <div key={dept.id}>
+                  <SectionTitle title={title} />
+                  <div className="flex flex-wrap justify-center gap-10">
+                    {members.map((member, i) => (
+                      <MemberCard key={i} {...member} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {/* 2. BIDANG PA */}
-          <div>
-            <SectionTitle title="BIDANG PEMBINAAN ANGGOTA (PA)" />
-            <div className="flex flex-col gap-10">
-              <div className="flex flex-wrap justify-center gap-10">
-                {bidangPA.slice(0, 3).map((member, i) => <MemberCard key={i} {...member} />)}
-              </div>
-              <div className="flex flex-wrap justify-center gap-10">
-                {bidangPA.slice(3).map((member, i) => <MemberCard key={i + 3} {...member} />)}
-              </div>
-            </div>
-          </div>
-
-          {/* 3. BIDANG PAO */}
-          <div>
-            <SectionTitle title="BIDANG PEMBINAAN APARATUR ORGANISASI (PAO)" />
-            <div className="flex flex-col gap-10">
-              <div className="flex flex-wrap justify-center gap-10">
-                {bidangPAO.slice(0, 3).map((member, i) => <MemberCard key={i} {...member} />)}
-              </div>
-              <div className="flex flex-wrap justify-center gap-10">
-                {bidangPAO.slice(3).map((member, i) => <MemberCard key={i + 3} {...member} />)}
-              </div>
-            </div>
-          </div>
-
-          {/* 4. KOMUNIKASI DIGITAL */}
-          <div>
-            <SectionTitle title="BIDANG KOMUNIKASI DIGITAL" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangKomdig.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
-
-        </div>
+        )}
         {/* === END GROUP 1 === */}
 
-
-        {/* === GROUP 2: OUTSIDE (MAIN BG) === */}
+        {/* === GROUP 2: OUTSIDE (All other departments) === */}
         <div className="space-y-16 py-8">
+          {outerDepartments.map((dept) => {
+            const members = getMembersByDept(dept.name);
+            const title = DEPARTMENT_TITLES[dept.name] || dept.name;
 
-          {/* 1. KPP */}
-          <div>
-            <SectionTitle title="BIDANG KEWIRAUSAHAAN & PENGEMBANGAN PROFESI (KPP)" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangKPP.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
+            // Only render section if it has members? Or render empty?
+            // Usually if no members, simpler to hide or show empty.
+            // Let's show it so they know it exists but is empty.
 
-          {/* 2. PTKP */}
-          <div>
-            <SectionTitle title="BIDANG PERGURUAN TINGGI KEMAHASISWAAN & KEPEMUDAAN (PTKP)" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangPTKP.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
-
-          {/* 3. PPD */}
-          <div>
-            <SectionTitle title="BIDANG PARTISIPASI PEMBANGUNAN DAERAH (PPD)" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangPPD.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
-
-          {/* 4. PU */}
-          <div>
-            <SectionTitle title="BIDANG PEMBERDAYAAN UMAT (PU)" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangPU.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
-
-          {/* 5. HUMHAM */}
-          <div>
-            <SectionTitle title="BIDANG HUKUM & HAM (HUMHAM)" />
-            <div className="flex flex-wrap justify-center gap-10">
-              {bidangHumHam.map((member, i) => <MemberCard key={i} {...member} />)}
-            </div>
-          </div>
-
+            return (
+              <div key={dept.id}>
+                <SectionTitle title={title} />
+                <div className="flex flex-wrap justify-center gap-10">
+                  {members.length > 0 ? (
+                    members.map((member, i) => (
+                      <MemberCard key={i} {...member} />
+                    ))
+                  ) : (
+                    <p className="text-white/50 italic text-sm">Belum ada pengurus di bidang ini.</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
         {/* === END GROUP 2 === */}
-
       </div>
 
       {/* FOOTER MESSAGE */}
       <div className="text-center mt-20 opacity-80">
         <h2 className="text-4xl font-black italic mb-2">#HMIVISIONER</h2>
-        <p className="tracking-[0.3em] font-light">KONSISTEN DALAM KEBENARAN</p>
+        <p className="tracking-[0.3em] font-light">
+          KONSISTEN DALAM KEBENARAN
+        </p>
       </div>
-
     </div>
   );
 }

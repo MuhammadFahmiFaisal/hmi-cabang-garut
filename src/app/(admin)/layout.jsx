@@ -48,6 +48,9 @@ export default function AdminRootLayout({ children }) {
                 <Link href="/admin/members" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 text-gray-600 font-medium hover:text-green-700 transition group">
                   <span className="group-hover:translate-x-1 transition-transform">👥</span> Pengurus
                 </Link>
+                <Link href="/admin/departments" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 text-gray-600 font-medium hover:text-green-700 transition group">
+                  <span className="group-hover:translate-x-1 transition-transform">📂</span> Bidang
+                </Link>
                 <Link href="/admin/lpp" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 text-gray-600 font-medium hover:text-green-700 transition group">
                   <span className="group-hover:translate-x-1 transition-transform">🏢</span> LPP
                 </Link>
