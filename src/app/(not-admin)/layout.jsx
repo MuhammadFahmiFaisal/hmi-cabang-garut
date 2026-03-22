@@ -2,6 +2,7 @@ import { Montserrat, Inter } from "next/font/google";
 import "../globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import KillSwitch from "@/components/layout/KillSwitch";
 
 const montserrat = Montserrat({
   weight: ["400", "500", "600", "700", "800"],
@@ -27,6 +28,13 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
+  // Kill Switch: Untuk perlindungan jika belum lunas
+  const isLocked = process.env.NEXT_PUBLIC_SITE_LOCKED === 'true';
+
+  if (isLocked) {
+    return <KillSwitch />;
+  }
+
   return (
     <html>
       <body className={`${montserrat.variable} ${inter.variable} bg-[#00773A] antialiased text-white font-sans`}>
@@ -37,3 +45,4 @@ export default async function RootLayout({ children }) {
     </html>
   );
 }
+

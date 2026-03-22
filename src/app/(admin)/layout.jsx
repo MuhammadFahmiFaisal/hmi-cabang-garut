@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import Link from "next/link";
 import LogoutButton from "@/components/admin/LogoutButton"; // We will create this
 import AdminAuthCheck from "@/components/admin/AdminAuthCheck"; // Auth Guard
+import KillSwitch from "@/components/layout/KillSwitch";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,6 +13,13 @@ export const metadata = {
 };
 
 export default function AdminRootLayout({ children }) {
+  // Kill Switch: Untuk perlindungan jika belum lunas
+  const isLocked = process.env.NEXT_PUBLIC_SITE_LOCKED === 'true';
+
+  if (isLocked) {
+    return <KillSwitch />;
+  }
+
   return (
     <html lang="id">
       <body className={`${inter.className} bg-gray-50 text-gray-900`}>
