@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { Trash2, Plus, Upload, Loader2, X, Pencil } from "lucide-react";
+import imageCompression from "browser-image-compression";
 
 export default function AdminGalleryPage() {
   const [items, setItems] = useState([]);
@@ -90,13 +91,32 @@ export default function AdminGalleryPage() {
   };
 
   const uploadImage = async (file) => {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    let fileToUpload = file;
+
+    // Kompres jika file adalah gambar
+    if (file.type.startsWith("image/")) {
+      try {
+        const options = {
+          maxSizeMB: 0.2, // Reduksi ke 200KB untuk menghemat bandwidth
+          maxWidthOrHeight: 1280, // Resolusi cukup untuk web
+          useWebWorker: true,
+          initialQuality: 0.8,
+        };
+        console.log("Gallery: Original size", file.size / 1024 / 1024, "MB");
+        fileToUpload = await imageCompression(file, options);
+        console.log("Gallery: Compressed size", fileToUpload.size / 1024 / 1024, "MB");
+      } catch (error) {
+        console.error("Compression error:", error);
+        // Lanjutkan upload file asli jika kompresi gagal
+      }
+    }
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("gallery")
-      .upload(filePath, file);
+      .upload(filePath, fileToUpload);
 
     if (uploadError) throw uploadError;
 

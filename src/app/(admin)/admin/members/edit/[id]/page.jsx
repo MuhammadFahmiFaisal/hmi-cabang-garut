@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { use } from "react";
+import imageCompression from "browser-image-compression";
 
 export default function EditMemberPage({ params }) {
   const router = useRouter();
@@ -75,22 +76,36 @@ export default function EditMemberPage({ params }) {
     if (!file) return;
 
     setSubmitting(true);
-    const fileName = `members-${Date.now()}-${file.name}`;
 
-    // Upload to Supabase Storage bucket named 'images'
-    const { data, error } = await supabase.storage
-      .from("images")
-      .upload(fileName, file);
+    try {
+      const options = {
+        maxSizeMB: 0.2,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        initialQuality: 0.8,
+      };
 
-    if (error) {
-      alert("Gagal upload gambar: " + error.message);
-      setSubmitting(false);
-    } else {
-      const { data: publicData } = supabase.storage
+      const compressedFile = await imageCompression(file, options);
+      const fileName = `members-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
+
+      const { data, error } = await supabase.storage
         .from("images")
-        .getPublicUrl(fileName);
+        .upload(fileName, compressedFile);
 
-      setFormData({ ...formData, image_url: publicData.publicUrl });
+      if (error) {
+        alert("Gagal upload gambar: " + error.message);
+        setSubmitting(false);
+      } else {
+        const { data: publicData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+
+        setFormData({ ...formData, image_url: publicData.publicUrl });
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengompres gambar: " + err.message);
       setSubmitting(false);
     }
   };

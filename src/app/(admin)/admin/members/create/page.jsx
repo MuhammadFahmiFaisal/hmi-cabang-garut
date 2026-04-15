@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
+import imageCompression from "browser-image-compression";
+
 export default function CreateMemberPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -43,22 +45,41 @@ export default function CreateMemberPage() {
     if (!file) return;
 
     setLoading(true);
-    const fileName = `members-${Date.now()}-${file.name}`;
 
-    // Upload to Supabase Storage bucket named 'images'
-    const { data, error } = await supabase.storage
-      .from("images")
-      .upload(fileName, file);
+    try {
+      // Image compression options
+      const options = {
+        maxSizeMB: 0.2, // Reduksi ke 200KB
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        initialQuality: 0.8,
+      };
 
-    if (error) {
-      alert("Gagal upload gambar: " + error.message);
-      setLoading(false);
-    } else {
-      const { data: publicData } = supabase.storage
+      console.log("Original file size:", file.size / 1024 / 1024, "MB");
+      const compressedFile = await imageCompression(file, options);
+      console.log("Compressed file size:", compressedFile.size / 1024 / 1024, "MB");
+
+      const fileName = `members-${Date.now()}-${file.name.split('.')[0]}.webp`; // Simpan dalam format .webp lebih ringan
+
+      // Upload to Supabase Storage bucket named 'images'
+      const { data, error } = await supabase.storage
         .from("images")
-        .getPublicUrl(fileName);
+        .upload(fileName, compressedFile);
 
-      setFormData({ ...formData, image_url: publicData.publicUrl });
+      if (error) {
+        alert("Gagal upload gambar: " + error.message);
+        setLoading(false);
+      } else {
+        const { data: publicData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+
+        setFormData({ ...formData, image_url: publicData.publicUrl });
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengompres gambar: " + err.message);
       setLoading(false);
     }
   };

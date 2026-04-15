@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { use } from "react";
+import imageCompression from "browser-image-compression";
 
 export default function EditEventPage({ params }) {
   const router = useRouter();
@@ -57,21 +58,36 @@ export default function EditEventPage({ params }) {
     if (!file) return;
 
     setSubmitting(true);
-    const fileName = `${Date.now()}-${file.name}`;
+    
+    try {
+      const options = {
+        maxSizeMB: 0.2,
+        maxWidthOrHeight: 1280,
+        useWebWorker: true,
+        initialQuality: 0.8,
+      };
 
-    const { data, error } = await supabase.storage
-      .from("images")
-      .upload(fileName, file);
+      const compressedFile = await imageCompression(file, options);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
 
-    if (error) {
-      alert("Gagal upload gambar: " + error.message);
-      setSubmitting(false);
-    } else {
-      const { data: publicData } = supabase.storage
+      const { data, error } = await supabase.storage
         .from("images")
-        .getPublicUrl(fileName);
+        .upload(fileName, compressedFile);
 
-      setFormData({ ...formData, image_url: publicData.publicUrl });
+      if (error) {
+        alert("Gagal upload gambar: " + error.message);
+        setSubmitting(false);
+      } else {
+        const { data: publicData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+
+        setFormData({ ...formData, image_url: publicData.publicUrl });
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengompres gambar: " + err.message);
       setSubmitting(false);
     }
   };
